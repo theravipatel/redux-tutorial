@@ -32,3 +32,27 @@
         - Accepts an initial state and an object of reducer functions, then automatically generates our action creators and action type strings dynamically.
     - `RTK Query`:
         - An optional, powerful data-fetching and caching layer built directly into RTK that eliminates the need to hand-write loading and error states for API calls.
+
+
+## 2) Installation
+
+- Install Node.js
+- Install Vite
+- Setup React App via Terminal:
+    -   ```
+        npm create vite@latest
+        ```
+    - Follow the prompts and select as per your need
+- Install Node Modules
+    -   ```
+        npm install
+        ```
+- Install Redux/Redux-Toolkit
+    -   ```
+        npm install @reduxjs/toolkit react-redux
+        ```
+- Run the React App
+    -   ```
+        npm run dev
+        ```
+    - App should now run on localhost:5173 (Vite's default port).
