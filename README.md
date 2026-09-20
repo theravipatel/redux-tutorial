@@ -265,3 +265,138 @@
 
             export default MyCounter;
             ```
+
+
+## 5) API Call with Redux Toolkit Using createAsyncThunk
+- This is traditional approach for standard async workflows.
+- In this, we write the asynchronous request manually and manage `pending`, `fulfilled`, and `rejected` states in our slice.
+- If we prefer explicit control over dispatch actions and internal state properties, use `createAsyncThunk` along with a slice.
+- To implement this we can follow below steps:
+    - `Create the Async Thunk and Slice`:
+        - Define the async function to resolve our payload data, and set up our lifecycle cases (pending, fulfilled, rejected) in the slice using `extraReducers`.
+        - Example:
+            -   ```js
+                // In redux/usersSlice.js
+                import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+
+                // Define the async API call
+                export const fetchUsers = createAsyncThunk("fetchUsers", async () => {
+                    const response = await fetch("https://dummyjson.com/users/?limit=5");
+                    return response.json();
+                });
+
+                // Define user slice
+                const usersSlice = createSlice({
+                    name: "usersSlice",
+                    initialState: {
+                        data: [],
+                        loading: false,
+                        error: null,
+                    },
+                    reducers: {},
+                    extraReducers: (builder) => {
+                        builder.addCase(fetchUsers.pending, (state) => {
+                            state.loading = true;
+                        });
+                        builder.addCase(fetchUsers.fulfilled, (state, action) => {
+                            state.loading = false;
+                            state.data = action.payload;
+                        });
+                        builder.addCase(fetchUsers.rejected, (state, action) => {
+                            state.loading = false;
+                            state.data = action.error?.message;
+                        });
+                    },
+                });
+
+                export default usersSlice.reducer;
+                ```
+    - `Configure the Redux Store`:
+        - Register the slice reducer inside our central configuration file.
+        - Example:
+            -   ```js
+                // In redux/store.js
+                import { configureStore } from "@reduxjs/toolkit";
+                import usersSlice from "./usersSlice";
+
+                // Create the Redux store and configure it with the counter slice
+                const store = configureStore({
+                    reducer: {
+                        users: usersSlice,
+                    }
+                });
+
+                export default store;
+                ```
+    - `Dispatch and Access State in Components`:
+        - Trigger the API payload dispatch on layout mount via useEffect, and read values from the slice through hooks.
+        - Example:
+            -   ```jsx
+                // In ApiCallWithCreateAsyncThunkComponent.jsx
+                import { useEffect } from "react";
+                import { useDispatch, useSelector } from "react-redux";
+                import { fetchUsers } from "./redux/usersSlice";
+                import { Button, Spinner } from "react-bootstrap";
+
+                function ApiCallWithCreateAsyncThunk() {
+                    // Call the API using dispatch & useEffect
+                    const dispatch = useDispatch();
+
+                    useEffect(() => {
+                        dispatch(fetchUsers());
+                    }, []);
+
+                    // Get the API using selector
+                    const { data, loading, error} = useSelector((state) => state.users);
+
+                    if (loading) {
+                        return (
+                            <div>
+                                <Spinner
+                                    as="span"
+                                    animation="grow"
+                                    size="sm"
+                                    role="status"
+                                    aria-hidden="true"
+                                />
+                                Loading...
+                            </div>
+                        );
+                    }
+
+                    if (error) {
+                        return (
+                            <div>
+                                Errors... {error}
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div>
+                            <table className="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Id</th>
+                                        <th>User Name</th>
+                                        <th>User Email</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {
+                                        data?.users?.map((user, index)=>(
+                                            <tr key={index}>
+                                                <td>{ user?.id }</td>
+                                                <td>{ user?.username }</td>
+                                                <td>{ user?.email }</td>
+                                            </tr>
+                                        ))
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    );
+                }
+
+                export default ApiCallWithCreateAsyncThunk;
+                ```
