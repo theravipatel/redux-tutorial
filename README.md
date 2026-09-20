@@ -56,3 +56,40 @@
         npm run dev
         ```
     - App should now run on localhost:5173 (Vite's default port).
+
+
+## 3) Redux and Redux Toolkit Terminology
+- Redux is a pattern and library for managing global application state, and Redux Toolkit is the modern, standard way to write Redux logic with less code.
+- Redux Toolkit terminology centers on simplifying global state management by reducing boilerplate code and providing sensible defaults.
+- Core Redux Concepts:
+    - `State`:
+        - The single, central object that holds all of our application's data at any given time.
+    - `Action`:
+        - A plain JavaScript object with a type property that describes "what happened" in the application.
+    - `Payload`:
+        - Extra data sent along with an action to update the state.
+    - `Reducer`:
+        - A pure function that takes the previous state and an action, calculates the next state, and returns it.
+    - `Dispatch`:
+        - The function used to send an action to the store to trigger a state update.
+    - `Store`:
+        - The centralized container that holds the application's complete state tree.
+    - `Immutability`:
+        - The core rule that state cannot be directly changed; instead, updates create an updated copy of the state.
+- Redux Toolkit (RTK) Concepts:
+    - `configureStore()`:
+        - A function that sets up a Redux store with good default settings, combining reducers, and adding developer tools automatically.
+    - `createSlice()`:
+        - A function that accepts a name, initial state, and reducer functions, automatically generating action creators and action types matching our reducers.
+    - `Immer`:
+        - A built-in library that lets us write "mutating" logic inside reducers (e.g., state.value = 2) which it safely turns into immutable updates under the hood.
+    - `Action Creator`:
+        - A generated function that creates and returns an action object when called (e.g., increment()).
+    - `createAsyncThunk()`:
+        - A utility that generates a thunk handling asynchronous requests and automatically dispatching lifecycle actions (pending, fulfilled, rejected).
+    - `RTK Query`:
+        - A specialized data-fetching and caching toolset built into Redux Toolkit to manage server-side data and API endpoints.
+    - `useSelector`:
+        - A React hook that extracts data values from the global Redux store state.
+    - `useDispatch`:
+        - A React hook that returns the dispatch function to send actions from components.
