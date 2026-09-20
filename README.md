@@ -93,3 +93,175 @@
         - A React hook that extracts data values from the global Redux store state.
     - `useDispatch`:
         - A React hook that returns the dispatch function to send actions from components.
+
+
+## 4) Basic Example to setup store with Redux & RTK
+- In this, we will see the complete setup from the absolute beginning, starting with the root file (main.jsx or index.jsx) where we hook up the Redux store to our React application.
+- `Hook up the Provider (main.jsx)`:
+    - To make the Redux store available to our entire React app, we must wrap our root component with the `<Provider>` component from react-redux and pass it our store.
+    - Example:
+        -   ```jsx
+            // In main.jsx
+            import { StrictMode } from 'react'
+            import { createRoot } from 'react-dom/client'
+            import 'bootstrap/dist/css/bootstrap.min.css';
+            import './index.css'
+            import App from './App.jsx'
+            import { Provider } from 'react-redux'
+
+            createRoot(document.getElementById('root')).render(
+                <StrictMode>
+                    <Provider>
+                        <App />
+                    </Provider>
+                </StrictMode>,
+            )
+            ```
+- `Configure the Store (store.js)`:
+    - Next, create the central store using `configureStore()`.
+    - This file holds the state tree of our app.
+    - Example:
+        -   ```jsx
+            // In redux/store.js
+            import { configureStore } from "@reduxjs/toolkit";
+
+            // Create the Redux store and configure it with the counter slice
+            const store = configureStore({
+                reducer: {}
+            });
+
+            export default store;
+            ```
+        -   ```jsx
+            // In main.jsx
+            import { StrictMode } from 'react'
+            import { createRoot } from 'react-dom/client'
+            import 'bootstrap/dist/css/bootstrap.min.css';
+            import './index.css'
+            import App from './App.jsx'
+            import { Provider } from 'react-redux'
+            import store from './redux/store.js'
+
+            createRoot(document.getElementById('root')).render(
+                <StrictMode>
+                    <Provider store={store}>
+                        <App />
+                    </Provider>
+                </StrictMode>,
+            )
+            ```
+- `Create the Logic Slice (counterSlice.js)`:
+    - The slice handles our initial state and the logic for updating it.
+    - `createSlice()` automatically builds our actions and reducers behind the scenes.
+    - Example:
+        -   ```jsx
+            // In redux/counterSlice.js
+            import { createSlice } from "@reduxjs/toolkit";
+
+            // Define a slice of the Redux store for the counter functionality
+            const counterSlice = createSlice({
+                name: 'counter',
+                initialState: {
+                    value: 0,
+                },
+                // Define the reducers for incrementing, decrementing, and incrementing by a specific amount
+                reducers: {
+                    incrementMyCount: (state) => {
+                        state.value += 1; // Immer allows safe "mutation" here
+                    },
+                    decrementMyCount: (state) => {
+                        state.value -= 1;
+                    },
+                    incrementMyCountByAmount: (state, action) => {
+                        state.value += action.payload; // action.payload holds the argument passed
+                    },
+                },
+            });
+
+            // Export the actions to dispatch them in components
+            export const { incrementMyCount, decrementMyCount, incrementMyCountByAmount } = counterSlice.actions;
+
+            // Export the reducer for store.js
+            export default counterSlice.reducer;
+            ```
+        -   ```jsx
+            // In redux/store.js
+            import { configureStore } from "@reduxjs/toolkit";
+            import counterSlice from "./counterSlice";
+
+            // Create the Redux store and configure it with the counter slice
+            const store = configureStore({
+                reducer: {
+                    counter: counterSlice, // This names our state slice "counter"
+                }
+            });
+
+            export default store;
+            ```
+- `Connect to Components`:
+    - Finally, read data from the store with `useSelector` and dispatch updates using `useDispatch`.
+    - Example:
+        -   ```jsx
+            // In MyCounterComponent.jsx
+            import { Button } from "react-bootstrap";
+            // import the hooks we need from react-redux
+            import { useDispatch, useSelector } from "react-redux";
+            // import the actions we defined in counterSlice.js
+            import { incrementMyCount, decrementMyCount, incrementMyCountByAmount } from "./redux/counterSlice";
+
+            function MyCounter() {
+                // Access the "counter" object we defined in store.js
+                const count = useSelector((state) => state.counter.value);
+
+                // Get the dispatch function to dispatch actions
+                const dispatch = useDispatch();
+
+                return (
+                    <div>
+                        <table className="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <td colSpan={3}>Redux Toolkit Counter: { count }</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td className="w-25">
+                                        <Button
+                                            type="button"
+                                            className="w-full"
+                                            variant="primary"
+                                            onClick={ () => dispatch(incrementMyCount()) }
+                                        >
+                                            Increment ++
+                                        </Button>
+                                    </td>
+                                    <td className="w-25">
+                                        <Button
+                                            type="button"
+                                            className="w-full"
+                                            variant="primary"
+                                            onClick={ () => dispatch(decrementMyCount()) }
+                                        >
+                                            Decrement --
+                                        </Button>
+                                    </td>
+                                    <td className="w-25">
+                                        <Button
+                                            type="button"
+                                            className="w-full"
+                                            variant="primary"
+                                            onClick={ () => dispatch(incrementMyCountByAmount(5)) }
+                                        >
+                                            Increment By 5
+                                        </Button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                );
+            }
+
+            export default MyCounter;
+            ```
