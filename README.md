@@ -400,3 +400,144 @@
 
                 export default ApiCallWithCreateAsyncThunk;
                 ```
+
+
+## 6) GET API Call with Redux Toolkit Using RTK Query
+- RTK Query is the modern, built-in data fetching and caching solution for Redux Toolkit.
+- In this, we do not write async logic or manage pending, fulfilled, or rejected states manually; the tool handles networking states and caching automatically.
+- If we want to eliminate slice boilerplate, automatically manage server cache, and use auto-generated custom React hooks, use RTK Query.
+- To implement this we can follow below steps:
+    - `Create the API Slice`:
+        - Define the base configuration, endpoints, and data fetching queries using createApi and fetchBaseQuery from the React entry point.
+        - Configuration Properties:
+            - `reducerPath` *(Required)*:
+                - Sets the unique key name under which this API slice's cache state will live inside the global Redux store.
+            - `baseQuery` *(Required)*:
+                - Defines the base configuration for requests (like standard headers or base URLs).
+                - RTK Query provides `fetchBaseQuery`, which is a lightweight wrapper around standard `fetch()`.
+                - `fetchBaseQuery` will require `baseUrl` property which is basically a API base URL.
+            - `endpoints` *(Required)*:
+                - A callback function that defines our specific network interactions.
+                - It uses `builder.query()` for reading data `(GET)` or `builder.mutation()` for altering data `(POST/PUT/DELETE)`.
+            - `tagTypes` *(Optional)*:
+                - An array of string labels used to tag cached data for automatic cache invalidation and re-fetching.
+        - Example:
+            -   ```js
+                // In redux/usersApiSlice.js
+                import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+
+                // Define the API slice configuration
+                export const usersApiSlice = createApi({
+                    reducerPath: "usersApi", // Required: Unique store state key
+                    baseQuery: fetchBaseQuery({ baseUrl: "https://dummyjson.com" }), // Required: Sets base URL
+                    endpoints: (builder) => ({
+                        // Required: Defines endpoints. builder.query is for GET requests
+                        fetchUsers: builder.query({
+                            query: () => "users/?limit=5",
+                        }),
+                    }),
+                });
+
+                // RTK Query auto-generates custom hooks based on the endpoint names
+                export const { useFetchUsersQuery } = usersApiSlice;
+                ```
+    - `Configure the Redux Store`:
+        - Register the generated API slice reducer and its internal caching middleware inside our central configuration file.
+        - Store Properties:
+            - `[apiSlice.reducerPath]: apiSlice.reducer` *(Required)*:
+                - Allocates a dedicated state slice to store our fetched API data, request statuses, and cache.
+            - `middleware` *(Required for full features)*:
+                - Appends the auto-generated API middleware to handle caching timelines, garbage collection, polling, and background updates.
+        - Example:
+            -   ```js
+                // In redux/store.js
+                import { configureStore } from "@reduxjs/toolkit";
+                import { usersApiSlice } from "./usersApiSlice";
+
+                // Add the generated reducer and middleware to the store
+                const store = configureStore({
+                    reducer: {
+                        // Required: Mounts the API cache slice into Redux state
+                        [usersApiSlice.reducerPath]: usersApiSlice.reducer,
+                    },
+                    // Required: Middleware manages caching, invalidation, and lifetimes
+                    middleware: (getDefaultMiddleware) =>
+                        getDefaultMiddleware().concat(usersApiSlice.middleware),
+                });
+
+                export default store;
+                ```
+    - `Access Auto-Generated Hook in Components`:
+        - Execute the auto-generated query hook directly inside the component body, which handles fetching on mount and provides active lifecycle states.
+        - Hook Properties:
+            - `data`:
+                - The raw, successful JSON response body returned from the server (defaults to undefined until the request resolves).
+            - `isLoading`:
+                - A boolean flag that turns true only during the very first request when there is no cached data available.
+            - `isFetching`:
+                - A boolean flag that turns true every single time a network request is currently active (including background updates).
+            - `isError`:
+                - A boolean flag that turns true if the network request encounters a failure status code or exception.
+            - `error`:
+                - The raw error payload object returned from the server, containing status codes and custom message data.
+        - Example:
+            -   ```jsx
+                // In ApiCallWithRtkQueryComponent.jsx
+                import { useFetchUsersQuery } from "./redux/usersApiSlice";
+                import { Spinner } from "react-bootstrap";
+
+                function GetApiCallWithRtkQuery() {
+                    // Call the hook; returns data and reactive tracking properties automatically
+                    const { data, isLoading, isError, error } = useFetchUsersQuery();
+
+                    if (isLoading) {
+                        return (
+                            <div>
+                                <Spinner
+                                    as="span"
+                                    animation="grow"
+                                    size="sm"
+                                    role="status"
+                                    aria-hidden="true"
+                                />
+                                Loading...
+                            </div>
+                        );
+                    }
+
+                    if (isError) {
+                        return (
+                            <div>
+                                Errors... {error?.data?.message || "Something went wrong"}
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div>
+                            <table className="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Id</th>
+                                        <th>User Name</th>
+                                        <th>User Email</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {
+                                        data?.users?.map((user, index) => (
+                                            <tr key={index}>
+                                                <td>{ user?.id }</td>
+                                                <td>{ user?.username }</td>
+                                                <td>{ user?.email }</td>
+                                            </tr>
+                                        ))
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    );
+                }
+
+                export default GetApiCallWithRtkQuery;
+                ```

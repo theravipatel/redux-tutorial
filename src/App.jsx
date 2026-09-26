@@ -1,4 +1,5 @@
 import ApiCallWithCreateAsyncThunk from './ApiCallWithCreateAsyncThunkComponent'
+import GetApiCallWithRtkQuery from './GetApiCallWithRtkQueryComponent'
 import './App.css'
 import MyCounter from './MyCounterComponent'
 
@@ -14,6 +15,10 @@ function App() {
             <hr />
             <h2>API Call with Redux Toolkit Using createAsyncThunk</h2>
             <ApiCallWithCreateAsyncThunk />
+            <br></br>
+            <hr />
+            <h2>GET API Call with Redux Toolkit Using RTK Query</h2>
+            <GetApiCallWithRtkQuery />
             <br></br>
             <hr />
         </>
