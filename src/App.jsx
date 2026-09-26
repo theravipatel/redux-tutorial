@@ -2,6 +2,7 @@ import ApiCallWithCreateAsyncThunk from './ApiCallWithCreateAsyncThunkComponent'
 import GetApiCallWithRtkQuery from './GetApiCallWithRtkQueryComponent'
 import './App.css'
 import MyCounter from './MyCounterComponent'
+import PostApiCallWithRtkQuery from './PostApiCallWithRtkQueryComponent'
 
 function App() {
 
@@ -19,6 +20,10 @@ function App() {
             <hr />
             <h2>GET API Call with Redux Toolkit Using RTK Query</h2>
             <GetApiCallWithRtkQuery />
+            <br></br>
+            <hr />
+            <h2>POST API Call with Redux Toolkit Using RTK Query</h2>
+            <PostApiCallWithRtkQuery />
             <br></br>
             <hr />
         </>

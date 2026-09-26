@@ -541,3 +541,135 @@
 
                 export default GetApiCallWithRtkQuery;
                 ```
+
+
+## 7) POST API Call with Redux Toolkit Using RTK Query
+- In RTK Query, data-modifying operations (like creating, updating, or deleting server data) are called `mutations`.
+- Unlike queries that run automatically on component mount, mutations return a `trigger function` that we call manually when an event occurs (e.g., submitting a form or clicking a button).
+- By pairing mutations with `Tags`, RTK Query can automatically invalidate old cache data and re-fetch active queries in the background to keep the UI perfectly synced.
+- To implement a POST request with cache invalidation, we follow below steps:
+    - `Create the API Slice with Mutation and Tags`:
+        - Declare a tag name in tagTypes, assign it to the GET endpoint using `providesTags`, and state that the POST endpoint clears it using `invalidatesTags`.
+        - Mutation Properties:
+            - `builder.mutation()` *(Required)*:
+                - The endpoint builder method specifically used for data-modifying requests (POST, PUT, DELETE).
+            - `query` *(Required)*:
+                - A function that accepts our user-defined argument payload and returns an configuration object containing the specific sub-URL route, the HTTP method (POST), and the request body.
+            - `invalidatesTags` `(Optional)`:
+                - An array listing the tags that should be cleared when this mutation runs successfully, telling RTK Query to immediately re-fetch any active queries using those same tags.
+        - Example:
+            -   ```js
+                // In redux/usersApiSlice.js
+                import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+
+                export const usersApiSlice = createApi({
+                    reducerPath: "usersApi", // Required: Unique store state key
+                    baseQuery: fetchBaseQuery({ baseUrl: "https://dummyjson.com" }), // Required: Sets base URL
+                    tagTypes: ["Users"], // Declare the tag label for tracking cache
+                    endpoints: (builder) => ({
+                        // Required: Defines endpoints.
+                        // builder.query is for GET requests
+                        fetchUsers: builder.query({
+                            query: () => "users/?limit=5",
+                            providesTags: ["Users"], // Tag this GET query cache
+                        }),
+                        // builder.mutation is for POST/PUT/DELETE
+                        addUsers: builder.mutation({
+                            query: (userPayload) => ({
+                                url: "users/add",
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: userPayload, // Pass form data to backend
+                            }),
+                            invalidatesTags: ["Users"], // Clear tag to trigger auto refetch of fetchUsers
+                        }),
+                    }),
+                });
+
+                // RTK Query auto-generates custom hooks based on the endpoint names
+                export const { useFetchUsersQuery, useAddUsersMutation } = usersApiSlice;
+                ```
+    - `Configure the Redux Store`:
+        - No changes are required here if we already registered the API slice reducer and middleware during the GET setup.
+        - Example:
+            -   ```js
+                // In redux/store.js
+                import { configureStore } from "@reduxjs/toolkit";
+                import { usersApiSlice } from "./usersApiSlice";
+
+                // Add the generated reducer and middleware to the store
+                const store = configureStore({
+                    reducer: {
+                        // Required: Mounts the API cache slice into Redux state
+                        [usersApiSlice.reducerPath]: usersApiSlice.reducer,
+                    },
+                    // Required: Middleware manages caching, invalidation, and lifetimes
+                    middleware: (getDefaultMiddleware) =>
+                        getDefaultMiddleware().concat(usersApiSlice.middleware),
+                });
+
+                export default store;
+                ```
+    - `Execute the Trigger Function in Components`:
+        - Destructure the tuple array returned by the mutation hook to get the manual trigger function and its active lifecycle states.
+        - Mutation Hook Return Properties:
+            - `[triggerFunction, mutationStatusObject]`:
+                - The hook returns an array.
+                - The first element is the function we invoke to start the network request.
+                - The second element is an object tracking the call's specific lifecycle states.
+            - `isLoading`:
+                - A boolean flag that turns true while the POST network request is actively in progress.
+            - `.unwrap()`:
+                - A built-in method appended to the trigger promise chain that bypasses the RTK wrapper, returning the raw success payload or throwing an error directly to standard JavaScript try/catch blocks.
+        - Example:
+            -   ```jsx
+                // In PostApiCallWithRtkQueryComponent.jsx
+                import { Button } from "react-bootstrap";
+                import { useAddUsersMutation } from "./redux/usersApiSlice";
+
+                function PostApiCallWithRtkQuery() {
+                    // Setup the POST mutation hook
+                    const [addUser, { isLoading: isPostLoading }] = useAddUsersMutation();
+                    const handleCreateUser = async () => {
+                        const newMockUser = {
+                            username: "RaviPatel",
+                            email: "ravi@patel.com"
+                        };
+
+                        try {
+                            // Trigger the API call and unwrap the raw promise response
+                            const response = await addUser(newMockUser).unwrap();
+                            alert(`User added successfully with ID: ${response.id}`);
+                        } catch (error) {
+                            console.error("Failed to add user:", error);
+                            alert("Failed to create user.");
+                        }
+                    }
+                    return (
+                        <div>
+                            <div className="pb-3">
+                                <h6>Mock data to submit with API request</h6>
+                                <code>
+                                    {
+                                        `newMockUser = {
+                                            username: "RaviPatel",
+                                            email: "ravi@patel.com"
+                                        }`
+                                    }
+                                </code>
+                            </div>
+                            {/* Trigger the mutation on button click */}
+                            <Button
+                                variant="primary" 
+                                className="mb-3" 
+                                onClick={ handleCreateUser } 
+                                disabled={ isPostLoading }
+                            >
+                                { isPostLoading ? "Creating..." : "Add New User" }
+                            </Button>
+                        </div>
+                    );
+                }
+
+                export default PostApiCallWithRtkQuery;
+                ```
