@@ -1,0 +1,10 @@
+{
+  "notes": [
+    {
+      "title": "1",
+      "content": "1",
+      "id": "cgsElagCe9o"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}

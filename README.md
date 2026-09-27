@@ -801,3 +801,218 @@
             - Open the action detail to see exactly when data entered the cache, its expiration timeframe, and the registered React components currently listening to that network query.
         - `Locate State Errors with Action Tracing`:
             - If an action updates state incorrectly, we can enable action stack traces in the extension settings to pinpoint the exact line of UI source code that called `dispatch()`.
+
+
+## 10) Simple Note App for Practice
+- We will create simple note app to practice all the concepts we have learned so far.
+- To store note data, we will use `json-server` as backend and for routing we will use `react-router`.
+- For that we need to install below dependencies:
+    - For json-server, run below command:
+        - `npm install json-server`
+    - For react-router, run below command:
+        - `npm install react-router`
+- Start JSON Server:
+    - Create a file named `db.json` in the root of your project with the following content:
+        -   ```json
+            {
+                "notes": []
+            }
+            ```
+    - Command: `npx json-server db.json`
+- For the Note App, the functionality will be:
+    - List all the notes.
+    - Create new note.
+    - Delete existing note.
+- We will create below components for our note app:
+    - `ListNotes.jsx`:
+        - This component will list all the notes.
+    - `CreateNote.jsx`:
+        - This component will create new note.
+- We will create below redux slice for our note app:
+    - `notesApiSlice.js`:
+        - This slice will handle all the API calls for notes.
+- We will create below routes for our note app:
+    - `/notes`:
+        - This route will list all the notes.
+    - `/create-note`:
+        - This route will create new note.
+- Files for note app:
+    - `src/components/ListNotes.jsx`
+        -   ```jsx
+            import { useDeleteNoteMutation, useListNotesQuery } from "../redux/notesApiSlice";
+
+            function ListNotes() {
+                const { data: notes = [], error, isLoading } = useListNotesQuery();
+                const [deleteNote, { isLoading: isDeleting }] = useDeleteNoteMutation();
+
+                const handleDelete = async (noteId) => {
+                    await deleteNote(noteId);
+                };
+
+                return (
+                    <div className="container">
+                        <div className="row">
+                            <div className="col-md-12">
+                                <h4>List Notes</h4>
+                            </div>
+                        </div>
+                        {isLoading && <p>Loading notes...</p>}
+                        {error && <p className="text-danger">Unable to load notes.</p>}
+                        {!isLoading && !error && (
+                            <div className="row">
+                                <div className="col-md-12">
+                                    <table className="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Title</th>
+                                                <th>Content</th>
+                                                <th width="150">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {notes.map((note) => (
+                                                <tr key={note.id}>
+                                                    <td>{note.title}</td>
+                                                    <td>{note.content}</td>
+                                                    <td>
+                                                        <button
+                                                            className="btn btn-danger btn-sm"
+                                                            onClick={() => handleDelete(note.id)}
+                                                            disabled={isDeleting}
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+            export default ListNotes;
+            ```
+    - `src/components/CreateNote.jsx`
+        -   ```jsx
+            import { useState } from "react";
+            import { useCreateNoteMutation } from "../redux/notesApiSlice";
+
+            function CreateNote() {
+                const [title, setTitle] = useState("");
+                const [content, setContent] = useState("");
+
+                // Use the useCreateNoteMutation hook to get the createNote function
+                const [createNote, { isLoading, isError, isSuccess }] = useCreateNoteMutation();
+
+                // Handle form submission
+                const handleSubmit = async (e) => {
+                    e.preventDefault();
+                    if (!title || !content) {
+                        alert("Please fill in all fields.");
+                        return;
+                    }
+                    // Here you can handle the form submission, e.g., send the data to an API or update the state
+                    const response = await createNote({ title, content });
+                    console.log(response);
+
+                    // Reset the form fields
+                    setTitle("");
+                    setContent("");
+                }
+                return (
+                    <div className="container">
+                        <div className="row">
+                            <div className="col-md-12">
+                                <h4>Create Note</h4>
+                            </div>
+                        </div>
+                        {isError && <div className="alert alert-danger">Error creating note.</div>}
+                        {isSuccess && <div className="alert alert-success">Note created successfully.</div>}
+                        <div className="row">
+                            <div className="col-md-6">
+                                <form onSubmit={handleSubmit}>
+                                    <div className="form-group">
+                                        <label htmlFor="title">Title</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            id="title"
+                                            placeholder="Enter title"
+                                            value={title}
+                                            onChange={(e) => setTitle(e.target.value)}
+                                            disabled={isLoading}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label htmlFor="content">Content</label>
+                                        <textarea
+                                            className="form-control"
+                                            id="content"
+                                            rows="3"
+                                            placeholder="Enter content"
+                                            value={content}
+                                            onChange={(e) => setContent(e.target.value)}
+                                            disabled={isLoading}
+                                        ></textarea>
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary mt-2"
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading ? "Creating..." : "Create Note"}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            export default CreateNote;
+            ```
+    - `src/redux/notesApiSlice.js`
+        -   ```js
+            import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+
+            export const notesApiSlice = createApi({
+                reducerPath: "notesApi",
+                baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:3000/' }),
+                tagTypes: ["Notes"],
+                endpoints: (builder) => ({
+                    // List Notes
+                    listNotes: builder.query({
+                        query: () => "notes",
+                        providesTags: ["Notes"],
+                    }),
+                    // Create Note
+                    createNote: builder.mutation({
+                        query: (requestPayload) => ({
+                            url: "notes",
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: requestPayload,
+                        }),
+                        invalidatesTags: ["Notes"],
+                    }),
+                    // Delete Note
+                    deleteNote: builder.mutation({
+                        query: (noteId) => ({
+                            url: `notes/${noteId}`,
+                            method: "DELETE",
+                        }),
+                        invalidatesTags: ["Notes"],
+                    }),
+                })
+            });
+
+            export const {
+                useListNotesQuery,
+                useCreateNoteMutation,
+                useDeleteNoteMutation
+            } = notesApiSlice;
+            ```
