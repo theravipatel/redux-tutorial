@@ -673,3 +673,72 @@
 
                 export default PostApiCallWithRtkQuery;
                 ```
+
+
+## 8) Redux and Redux-Toolkit Middleware
+- A `Redux middleware` provides a third-party extension point between the moment an action is dispatched and the moment it reaches the reducer.
+- It is primarily used to handle side effects - such as asynchronous API calls, logging, crash reporting, and routing.
+- Core Concepts of Middleware:
+    - `The Pipeline`:
+        - When we run `dispatch(action)`, the action travels through a pipeline of configured middlewares sequentially before finally hitting the reducer to update the state.
+    - `The Signature`:
+        - Every standard Redux middleware follows a specific `curried function` structure representing `(store) => (next) => (action) => { ... }`.
+            - `store`:
+                - Provides access to `getState()` and `dispatch()`.
+            - `next`:
+                - The function used to pass the action down to the next middleware in the pipeline (or to the reducer if it is the last one).
+            - `action`:
+                - The plain JavaScript object representing the event being dispatched.
+    - `Built-in Defaults`:
+        - `Vanilla Redux` comes with zero middlewares out of the box.
+        - `Redux Toolkit (RTK)` automatically configures a robust set of default middlewares, including `redux-thunk` (for handling async actions) and development-only checks for immutability and serializability.
+- Creating a Custom Middleware:
+    - If we want to intercept actions to run custom logic globally - like logging actions, tracking analytics, or catching specific errors, we can write our own middleware.
+    - To implement Custom Middleware, we can follow below steps:
+        - `Define the Custom Middleware Function`:
+            - Write a `curried function` that intercepts actions, inspects their type or payload, runs custom code, and then forwards the action using `next(action)`.
+            - Example:
+                -   ```js
+                    // In middleware/customLoggerMiddleware.js
+
+                    // Custom middleware structure: store -> next -> action
+                    const customLoggerMiddleware = (store) => (next) => (action) => {
+
+                        // Log only for Counter actions
+                        if (!action.type?.startsWith("counter/")) {
+                            return next(action);
+                        }
+
+                        console.log("1. Action Intercepted", action.type);
+                        console.log("2. State Before Update", store.getState());
+
+                        // Execute the next middleware or send the action to the reducer
+                        const result = next(action);
+
+                        console.log("3. State After Update:", store.getState());
+
+                        // Return the result of the next function execution
+                        return result;
+                    }
+
+                    export default customLoggerMiddleware;
+                    ```
+        - `Configure the Redux Store with Middleware`:
+            - Register the custom middleware array inside our central configuration file using the `middleware` property in `configureStore`.
+            - Store Properties:
+                - `middleware` *(Optional but highly recommended)*:
+                    - A callback function that takes getDefaultMiddleware as its argument and returns an array of middlewares.
+                - `getDefaultMiddleware()`:
+                    - Retrieves RTK's built-in default middlewares.
+                    - We use `.concat()` or `.prepend()` to safely inject custom items without overwriting defaults like Thunk.
+            - Example:
+                -   ```js
+                    // In reduc/store.js
+                    import customLoggerMiddleware from "./middleware/customLoggerMiddleware";
+                    const store = configureStore({
+                        ... // other required code
+                        middleware: (getDefaultMiddleware) => {
+                            return getDefaultMiddleware().concat(usersApiSlice.middleware, customLoggerMiddleware);
+                        },
+                    });
+                    ```

@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import counterSlice from "./counterSlice";
 import usersSlice from "./usersSlice";
 import { usersApiSlice } from "./usersApiSlice";
+import customLoggerMiddleware from "./middleware/customLoggerMiddleware";
 
 // Create the Redux store and configure it with the counter slice
 const store = configureStore({
@@ -12,7 +13,9 @@ const store = configureStore({
         [usersApiSlice.reducerPath]: usersApiSlice.reducer,
     },
     // RTK Query - Required: Middleware manages caching, invalidation, and lifetimes
-    middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(usersApiSlice.middleware),
+    middleware: (getDefaultMiddleware) => {
+        return getDefaultMiddleware().concat(usersApiSlice.middleware, customLoggerMiddleware);
+    },
 });
 
 export default store;
