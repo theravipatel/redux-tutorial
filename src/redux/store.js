@@ -16,6 +16,7 @@ const store = configureStore({
     middleware: (getDefaultMiddleware) => {
         return getDefaultMiddleware().concat(usersApiSlice.middleware, customLoggerMiddleware);
     },
+    devTools: process.env.NODE_ENV !== "production", // true / false
 });
 
 export default store;
